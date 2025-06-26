@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe - JavaScript Vanilla</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="shortcut icon" href="public/tictactoe.ico" type="image/x-icon">
+    
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 Tic Tac Toe</h1>
+        
+        <div class="score-board">
+            <div class="score-item">
+                <div class="score-label">Jugador X</div>
+                <div class="score-value player-x" id="score-x">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Empates</div>
+                <div class="score-value draws" id="score-draw">0</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Jugador O</div>
+                <div class="score-value player-o" id="score-o">0</div>
+            </div>
+        </div>
+
+        <div class="game-info">
+            <div id="current-turn" class="current-player">
+                Turno del jugador: X
+            </div>
+            <div id="winner-message" class="winner hidden">
+                🎉 ¡Jugador X ganó! 🎉
+            </div>
+            <div id="draw-message" class="draw hidden">
+                🤝 ¡Empate! 🤝
+            </div>
+        </div>
+
+        <div class="board" id="board">
+            <button class="cell" data-index="0"></button>
+            <button class="cell" data-index="1"></button>
+            <button class="cell" data-index="2"></button>
+            <button class="cell" data-index="3"></button>
+            <button class="cell" data-index="4"></button>
+            <button class="cell" data-index="5"></button>
+            <button class="cell" data-index="6"></button>
+            <button class="cell" data-index="7"></button>
+            <button class="cell" data-index="8"></button>
+        </div>
+
+        <div class="controls">
+            <button class="reset-btn" id="reset-btn">
+                🔄 Nueva Partida
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Estado del juego
+        let board = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let gameOver = false;
+        let winner = null;
+        let scores = { X: 0, O: 0, draw: 0 };
+
+        // Combinaciones ganadoras
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Filas
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columnas
+            [0, 4, 8], [2, 4, 6] // Diagonales
+        ];
+
+        // Elementos del DOM
+        const cells = document.querySelectorAll('.cell');
+        const currentTurnEl = document.getElementById('current-turn');
+        const winnerMessageEl = document.getElementById('winner-message');
+        const drawMessageEl = document.getElementById('draw-message');
+        const resetBtn = document.getElementById('reset-btn');
+        const scoreXEl = document.getElementById('score-x');
+        const scoreOEl = document.getElementById('score-o');
+        const scoreDrawEl = document.getElementById('score-draw');
+
+        // Inicializar el juego
+        function init() {
+            cells.forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+            resetBtn.addEventListener('click', resetGame);
+            updateDisplay();
+        }
+
+        // Manejar click en celda
+        function handleCellClick(e) {
+            const index = parseInt(e.target.dataset.index);
+            
+            if (board[index] === '' && !gameOver) {
+                makeMove(index);
+            }
+        }
+
+        // Realizar movimiento
+        function makeMove(index) {
+            board[index] = currentPlayer;
+            
+            // Actualizar celda visualmente
+            const cell = cells[index];
+            cell.textContent = currentPlayer;
+            cell.classList.add(currentPlayer.toLowerCase());
+            cell.disabled = true;
+
+            // Verificar ganador
+            const winningCombo = checkWinner();
+            if (winningCombo) {
+                gameOver = true;
+                winner = currentPlayer;
+                scores[currentPlayer]++;
+                highlightWinningCells(winningCombo);
+                showWinner();
+            } else if (isDraw()) {
+                gameOver = true;
+                scores.draw++;
+                showDraw();
+            } else {
+                // Cambiar turno
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateCurrentTurn();
+            }
+            
+            updateScores();
+        }
+
+        // Verificar ganador
+        function checkWinner() {
+            for (let combination of winningCombinations) {
+                const [a, b, c] = combination;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return combination;
+                }
+            }
+            return null;
+        }
+
+        // Verificar empate
+        function isDraw() {
+            return board.every(cell => cell !== '');
+        }
+
+        // Resaltar celdas ganadoras
+        function highlightWinningCells(combination) {
+            combination.forEach(index => {
+                cells[index].classList.add('winning');
+            });
+        }
+
+        // Mostrar ganador
+        function showWinner() {
+            currentTurnEl.classList.add('hidden');
+            winnerMessageEl.classList.remove('hidden');
+            winnerMessageEl.textContent = `🎉 ¡Jugador ${winner} ganó! 🎉`;
+        }
+
+        // Mostrar empate
+        function showDraw() {
+            currentTurnEl.classList.add('hidden');
+            drawMessageEl.classList.remove('hidden');
+        }
+
+        // Actualizar turno actual
+        function updateCurrentTurn() {
+            currentTurnEl.textContent = `Turno del jugador: ${currentPlayer}`;
+        }
+
+        // Actualizar puntuaciones
+        function updateScores() {
+            scoreXEl.textContent = scores.X;
+            scoreOEl.textContent = scores.O;
+            scoreDrawEl.textContent = scores.draw;
+        }
+
+        // Actualizar display
+        function updateDisplay() {
+            updateCurrentTurn();
+            updateScores();
+        }
+
+        // Reiniciar juego
+        function resetGame() {
+            // Resetear estado
+            board = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameOver = false;
+            winner = null;
+
+            // Limpiar celdas
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.disabled = false;
+                cell.classList.remove('x', 'o', 'winning');
+            });
+
+            // Ocultar mensajes
+            winnerMessageEl.classList.add('hidden');
+            drawMessageEl.classList.add('hidden');
+            currentTurnEl.classList.remove('hidden');
+
+            updateDisplay();
+        }
+
+        // Iniciar el juego cuando se carga la página
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
