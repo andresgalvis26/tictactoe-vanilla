@@ -3,15 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe - JavaScript Vanilla</title>
+    <title>Tic Tac Toe Vanilla</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="shortcut icon" href="public/tictactoe.ico" type="image/x-icon">
-    
 </head>
 <body>
     <div class="game-container">
-        <h1>🎮 Tic Tac Toe</h1>
-        
+        <h1>Tic Tac Toe</h1>
+
+        <div class="toolbar">
+            <div class="theme-selector">
+                <button class="tool-btn" id="theme-btn">Tema</button>
+                <div class="theme-options" id="theme-options">
+                    <button class="theme-option active" data-theme="default">Default</button>
+                    <button class="theme-option" data-theme="dark">Oscuro</button>
+                    <button class="theme-option" data-theme="ocean">Océano</button>
+                    <button class="theme-option" data-theme="sunset">Atardecer</button>
+                </div>
+            </div>
+            <button class="tool-btn" id="sound-btn">Sonido: ON</button>
+        </div>
+
+        <div class="size-selector">
+            <button class="size-btn active" data-size="3">3x3</button>
+            <button class="size-btn" data-size="4">4x4</button>
+            <button class="size-btn" data-size="5">5x5</button>
+            <button class="size-btn" data-size="6">6x6</button>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="pvp">1 vs 1</button>
+            <button class="mode-btn" data-mode="ai-easy">vs IA (Fácil)</button>
+            <button class="mode-btn" data-mode="ai-hard">vs IA (Difícil)</button>
+        </div>
+
         <div class="score-board">
             <div class="score-item">
                 <div class="score-label">Jugador X</div>
@@ -29,52 +54,59 @@
 
         <div class="game-info">
             <div id="current-turn" class="current-player">
-                Turno del jugador: X
+                <span class="turn-indicator">Turno del jugador: X</span>
             </div>
-            <div id="winner-message" class="winner hidden">
-                🎉 ¡Jugador X ganó! 🎉
-            </div>
-            <div id="draw-message" class="draw hidden">
-                🤝 ¡Empate! 🤝
-            </div>
+            <div id="winner-message" class="winner hidden"></div>
+            <div id="draw-message" class="draw-msg hidden">Empate</div>
         </div>
 
-        <div class="board" id="board">
-            <button class="cell" data-index="0"></button>
-            <button class="cell" data-index="1"></button>
-            <button class="cell" data-index="2"></button>
-            <button class="cell" data-index="3"></button>
-            <button class="cell" data-index="4"></button>
-            <button class="cell" data-index="5"></button>
-            <button class="cell" data-index="6"></button>
-            <button class="cell" data-index="7"></button>
-            <button class="cell" data-index="8"></button>
-        </div>
+        <div class="board size-3" id="board"></div>
 
         <div class="controls">
-            <button class="reset-btn" id="reset-btn">
-                🔄 Nueva Partida
-            </button>
+            <button class="reset-btn" id="reset-btn">Nueva Partida</button>
         </div>
+
+        <div class="bottom-panels">
+            <div class="panel">
+                <h3>Estadísticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-item"><span class="stat-label">Totales:</span><span class="stat-value" id="stat-total">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Racha:</span><span class="stat-value" id="stat-streak">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Mejor racha:</span><span class="stat-value" id="stat-best-streak">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Ganados X:</span><span class="stat-value" id="stat-x-wins">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Ganados O:</span><span class="stat-value" id="stat-o-wins">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Empates:</span><span class="stat-value" id="stat-draws">0</span></div>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Historial de Movimientos</h3>
+                <div class="move-history" id="move-history">
+                    <div style="opacity:0.5;font-size:0.75rem;">Esperando movimientos...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">Desarrollado por <strong>Andrés Galvis</strong></div>
     </div>
 
+    <div class="confetti-container" id="confetti-container"></div>
+
     <script>
-        // Estado del juego
-        let board = ['', '', '', '', '', '', '', '', ''];
+        let boardSize = 3;
+        let winningCombinations = [];
+        let board = [];
         let currentPlayer = 'X';
         let gameOver = false;
         let winner = null;
         let scores = { X: 0, O: 0, draw: 0 };
+        let gameMode = 'pvp';
+        let soundEnabled = true;
+        let moveHistory = [];
+        let stats = { totalGames: 0, xWins: 0, oWins: 0, draws: 0, currentStreak: 0, bestStreak: 0, lastWinner: null };
+        let moveNumber = 0;
+        let cells = [];
 
-        // Combinaciones ganadoras
-        const winningCombinations = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Filas
-            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columnas
-            [0, 4, 8], [2, 4, 6] // Diagonales
-        ];
-
-        // Elementos del DOM
-        const cells = document.querySelectorAll('.cell');
+        const boardEl = document.getElementById('board');
         const currentTurnEl = document.getElementById('current-turn');
         const winnerMessageEl = document.getElementById('winner-message');
         const drawMessageEl = document.getElementById('draw-message');
@@ -82,134 +114,491 @@
         const scoreXEl = document.getElementById('score-x');
         const scoreOEl = document.getElementById('score-o');
         const scoreDrawEl = document.getElementById('score-draw');
+        const themeBtn = document.getElementById('theme-btn');
+        const themeOptions = document.getElementById('theme-options');
+        const soundBtn = document.getElementById('sound-btn');
+        const sizeBtns = document.querySelectorAll('.size-btn');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const moveHistoryEl = document.getElementById('move-history');
+        const confettiContainer = document.getElementById('confetti-container');
+        const statTotalEl = document.getElementById('stat-total');
+        const statStreakEl = document.getElementById('stat-streak');
+        const statBestStreakEl = document.getElementById('stat-best-streak');
+        const statXWinsEl = document.getElementById('stat-x-wins');
+        const statOWinsEl = document.getElementById('stat-o-wins');
+        const statDrawsEl = document.getElementById('stat-draws');
 
-        // Inicializar el juego
-        function init() {
-            cells.forEach(cell => {
+        function getWinLength(size) {
+            return size === 3 ? 3 : 4;
+        }
+
+        function generateCombinations(size, win) {
+            const combos = [];
+            for (let r = 0; r < size; r++)
+                for (let c = 0; c <= size - win; c++) {
+                    const a = [];
+                    for (let i = 0; i < win; i++) a.push(r * size + (c + i));
+                    combos.push(a);
+                }
+            for (let c = 0; c < size; c++)
+                for (let r = 0; r <= size - win; r++) {
+                    const a = [];
+                    for (let i = 0; i < win; i++) a.push((r + i) * size + c);
+                    combos.push(a);
+                }
+            for (let r = 0; r <= size - win; r++)
+                for (let c = 0; c <= size - win; c++) {
+                    const a = [];
+                    for (let i = 0; i < win; i++) a.push((r + i) * size + (c + i));
+                    combos.push(a);
+                }
+            for (let r = win - 1; r < size; r++)
+                for (let c = 0; c <= size - win; c++) {
+                    const a = [];
+                    for (let i = 0; i < win; i++) a.push((r - i) * size + (c + i));
+                    combos.push(a);
+                }
+            return combos;
+        }
+
+        function buildBoard() {
+            const win = getWinLength(boardSize);
+            winningCombinations = generateCombinations(boardSize, win);
+            const total = boardSize * boardSize;
+            board = new Array(total).fill('');
+            boardEl.innerHTML = '';
+            boardEl.className = 'board size-' + boardSize;
+            boardEl.style.gridTemplateColumns = 'repeat(' + boardSize + ', 1fr)';
+            boardEl.style.gridTemplateRows = 'repeat(' + boardSize + ', 1fr)';
+            const fs = window.innerWidth < 520
+                ? Math.min(2.5, Math.max(1, 5.5 - boardSize * 0.5)) + 'rem'
+                : Math.min(3, Math.max(1.4, 6 - boardSize * 0.5)) + 'rem';
+            boardEl.style.setProperty('--font-size', fs);
+            for (let i = 0; i < total; i++) {
+                const cell = document.createElement('button');
+                cell.className = 'cell';
+                cell.dataset.index = i;
                 cell.addEventListener('click', handleCellClick);
+                boardEl.appendChild(cell);
+            }
+            cells = boardEl.querySelectorAll('.cell');
+        }
+
+        function loadFromStorage() {
+            try {
+                const s = localStorage.getItem('tictactoe_stats');
+                const sc = localStorage.getItem('tictactoe_scores');
+                if (s) { const p = JSON.parse(s); Object.assign(stats, p); }
+                if (sc) { const p = JSON.parse(sc); Object.assign(scores, p); }
+            } catch (e) {}
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem('tictactoe_stats', JSON.stringify(stats));
+                localStorage.setItem('tictactoe_scores', JSON.stringify(scores));
+            } catch (e) {}
+        }
+
+        function init() {
+            loadFromStorage();
+            buildBoard();
+            themeBtn.addEventListener('click', () => themeOptions.classList.toggle('open'));
+            document.addEventListener('click', (e) => {
+                if (!themeBtn.contains(e.target) && !themeOptions.contains(e.target))
+                    themeOptions.classList.remove('open');
             });
+            document.querySelectorAll('.theme-option').forEach(opt =>
+                opt.addEventListener('click', () => setTheme(opt.dataset.theme)));
+            soundBtn.addEventListener('click', toggleSound);
+            sizeBtns.forEach(btn => btn.addEventListener('click', () => setBoardSize(parseInt(btn.dataset.size))));
+            modeBtns.forEach(btn => btn.addEventListener('click', () => setMode(btn.dataset.mode)));
             resetBtn.addEventListener('click', resetGame);
             updateDisplay();
+            updateStatsUI();
+            updateBoardGlow();
+            updateModeAvailability();
         }
 
-        // Manejar click en celda
-        function handleCellClick(e) {
-            const index = parseInt(e.target.dataset.index);
-            
-            if (board[index] === '' && !gameOver) {
-                makeMove(index);
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme === 'default' ? '' : theme);
+            document.querySelectorAll('.theme-option').forEach(o => o.classList.toggle('active', o.dataset.theme === theme));
+            themeOptions.classList.remove('open');
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            soundBtn.textContent = 'Sonido: ' + (soundEnabled ? 'ON' : 'OFF');
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                gain.gain.value = 0.1;
+                if (type === 'place') {
+                    osc.frequency.value = 600;
+                    osc.type = 'sine';
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.15);
+                } else if (type === 'win') {
+                    osc.frequency.value = 800;
+                    osc.type = 'sine';
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.4);
+                } else if (type === 'draw') {
+                    osc.frequency.value = 300;
+                    osc.type = 'triangle';
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'invalid') {
+                    osc.frequency.value = 200;
+                    osc.type = 'square';
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.1);
+                }
+            } catch (e) {}
+        }
+
+        function setBoardSize(size) {
+            boardSize = size;
+            sizeBtns.forEach(b => b.classList.toggle('active', parseInt(b.dataset.size) === size));
+            if (size > 3 && gameMode !== 'pvp') {
+                gameMode = 'pvp';
+                modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === 'pvp'));
             }
+            updateModeAvailability();
+            buildBoard();
+            resetGame();
         }
 
-        // Realizar movimiento
+        function updateModeAvailability() {
+            const aiOnly = boardSize === 3;
+            modeBtns.forEach(b => {
+                if (b.dataset.mode !== 'pvp') {
+                    b.disabled = !aiOnly;
+                    b.title = aiOnly ? '' : 'Solo disponible en tablero 3x3';
+                }
+            });
+        }
+
+        function setMode(mode) {
+            if (mode !== 'pvp' && boardSize > 3) return;
+            gameMode = mode;
+            modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+            resetGame();
+        }
+
+        function handleCellClick(e) {
+            const cell = e.currentTarget;
+            const index = parseInt(cell.dataset.index);
+            if (board[index] !== '' || gameOver) {
+                if (gameOver) playSound('invalid');
+                return;
+            }
+            if (gameMode !== 'pvp' && currentPlayer !== 'X') return;
+            makeMove(index);
+        }
+
         function makeMove(index) {
             board[index] = currentPlayer;
-            
-            // Actualizar celda visualmente
+            moveNumber++;
+            moveHistory.push({ player: currentPlayer, position: index, move: moveNumber });
+
             const cell = cells[index];
-            cell.textContent = currentPlayer;
-            cell.classList.add(currentPlayer.toLowerCase());
+            cell.innerHTML = '<span class="mark">' + currentPlayer + '</span>';
+            cell.classList.add(currentPlayer === 'X' ? 'x-mark' : 'o-mark');
             cell.disabled = true;
 
-            // Verificar ganador
+            playSound('place');
+
             const winningCombo = checkWinner();
             if (winningCombo) {
                 gameOver = true;
                 winner = currentPlayer;
                 scores[currentPlayer]++;
+                updateStatsAfterGame(currentPlayer);
+                saveToStorage();
                 highlightWinningCells(winningCombo);
                 showWinner();
+                playSound('win');
+                launchConfetti();
+                updateBoardGlow();
+                updateCellPreviews();
             } else if (isDraw()) {
                 gameOver = true;
                 scores.draw++;
+                updateStatsAfterGame('draw');
+                saveToStorage();
                 showDraw();
+                playSound('draw');
+                updateBoardGlow();
+                updateCellPreviews();
             } else {
-                // Cambiar turno
                 currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
                 updateCurrentTurn();
+                updateBoardGlow();
+                updateCellPreviews();
+                if (gameMode !== 'pvp' && currentPlayer === 'O' && !gameOver) {
+                    setTimeout(function() { aiMove(); }, 350);
+                }
             }
-            
+
             updateScores();
+            updateMoveHistory();
         }
 
-        // Verificar ganador
-        function checkWinner() {
-            for (let combination of winningCombinations) {
-                const [a, b, c] = combination;
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-                    return combination;
+        function aiMove() {
+            if (gameOver) return;
+            var index;
+            if (gameMode === 'ai-easy') {
+                var empty = [];
+                for (var i = 0; i < board.length; i++) { if (board[i] === '') empty.push(i); }
+                if (empty.length === 0) return;
+                index = empty[Math.floor(Math.random() * empty.length)];
+            } else {
+                index = getBestMove();
+            }
+            if (index !== null && index !== undefined) makeMove(index);
+        }
+
+        function getBestMove() {
+            var bestScore = -Infinity;
+            var bestMove = null;
+            for (var i = 0; i < board.length; i++) {
+                if (board[i] === '') {
+                    board[i] = 'O';
+                    var score = minimax(board, 0, false);
+                    board[i] = '';
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = i;
+                    }
                 }
+            }
+            return bestMove;
+        }
+
+        function minimax(board, depth, isMaximizing) {
+            var result = evaluateBoard();
+            if (result === 10) return 10 - depth;
+            if (result === -10) return depth - 10;
+            var full = true;
+            for (var i = 0; i < board.length; i++) { if (board[i] === '') { full = false; break; } }
+            if (full) return 0;
+
+            if (isMaximizing) {
+                var best = -Infinity;
+                for (var i = 0; i < board.length; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'O';
+                        best = Math.max(best, minimax(board, depth + 1, false));
+                        board[i] = '';
+                    }
+                }
+                return best;
+            } else {
+                var best = Infinity;
+                for (var i = 0; i < board.length; i++) {
+                    if (board[i] === '') {
+                        board[i] = 'X';
+                        best = Math.min(best, minimax(board, depth + 1, true));
+                        board[i] = '';
+                    }
+                }
+                return best;
+            }
+        }
+
+        function evaluateBoard() {
+            for (var ci = 0; ci < winningCombinations.length; ci++) {
+                var combo = winningCombinations[ci];
+                var first = board[combo[0]];
+                if (!first) continue;
+                var match = true;
+                for (var j = 1; j < combo.length; j++) {
+                    if (board[combo[j]] !== first) { match = false; break; }
+                }
+                if (match) return first === 'O' ? 10 : -10;
+            }
+            return 0;
+        }
+
+        function checkWinner() {
+            for (var ci = 0; ci < winningCombinations.length; ci++) {
+                var combo = winningCombinations[ci];
+                var first = board[combo[0]];
+                if (!first) continue;
+                var match = true;
+                for (var j = 1; j < combo.length; j++) {
+                    if (board[combo[j]] !== first) { match = false; break; }
+                }
+                if (match) return combo;
             }
             return null;
         }
 
-        // Verificar empate
         function isDraw() {
-            return board.every(cell => cell !== '');
+            for (var i = 0; i < board.length; i++) { if (board[i] === '') return false; }
+            return true;
         }
 
-        // Resaltar celdas ganadoras
         function highlightWinningCells(combination) {
-            combination.forEach(index => {
-                cells[index].classList.add('winning');
-            });
+            for (var i = 0; i < combination.length; i++)
+                cells[combination[i]].classList.add('winning');
         }
 
-        // Mostrar ganador
         function showWinner() {
             currentTurnEl.classList.add('hidden');
             winnerMessageEl.classList.remove('hidden');
-            winnerMessageEl.textContent = `🎉 ¡Jugador ${winner} ganó! 🎉`;
+            winnerMessageEl.textContent = 'Jugador ' + winner + ' gan\u00f3';
         }
 
-        // Mostrar empate
         function showDraw() {
             currentTurnEl.classList.add('hidden');
             drawMessageEl.classList.remove('hidden');
         }
 
-        // Actualizar turno actual
         function updateCurrentTurn() {
-            currentTurnEl.textContent = `Turno del jugador: ${currentPlayer}`;
+            currentTurnEl.classList.remove('hidden');
+            winnerMessageEl.classList.add('hidden');
+            drawMessageEl.classList.add('hidden');
+            currentTurnEl.innerHTML = '<span class="turn-indicator">Turno del jugador: ' + currentPlayer + '</span>';
         }
 
-        // Actualizar puntuaciones
+        function updateBoardGlow() {
+            boardEl.classList.remove('turn-x', 'turn-o');
+            if (!gameOver) boardEl.classList.add('turn-' + currentPlayer.toLowerCase());
+        }
+
+        function updateCellPreviews() {
+            var canPreview = !(gameMode !== 'pvp' && currentPlayer !== 'X');
+            for (var i = 0; i < cells.length; i++) {
+                var cell = cells[i];
+                cell.classList.remove('preview-x', 'preview-o');
+                if (!cell.disabled && !gameOver && canPreview)
+                    cell.classList.add('preview-' + currentPlayer.toLowerCase());
+            }
+        }
+
         function updateScores() {
             scoreXEl.textContent = scores.X;
             scoreOEl.textContent = scores.O;
             scoreDrawEl.textContent = scores.draw;
         }
 
-        // Actualizar display
+        function updateStatsAfterGame(result) {
+            stats.totalGames++;
+            if (result === 'X') {
+                stats.xWins++;
+                if (stats.lastWinner === 'X') stats.currentStreak++;
+                else stats.currentStreak = 1;
+                stats.lastWinner = 'X';
+            } else if (result === 'O') {
+                stats.oWins++;
+                if (stats.lastWinner === 'O') stats.currentStreak++;
+                else stats.currentStreak = 1;
+                stats.lastWinner = 'O';
+            } else {
+                stats.draws++;
+                stats.currentStreak = 0;
+                stats.lastWinner = null;
+            }
+            if (stats.currentStreak > stats.bestStreak) stats.bestStreak = stats.currentStreak;
+            updateStatsUI();
+        }
+
+        function updateStatsUI() {
+            statTotalEl.textContent = stats.totalGames;
+            statStreakEl.textContent = stats.currentStreak;
+            statBestStreakEl.textContent = stats.bestStreak;
+            statXWinsEl.textContent = stats.xWins;
+            statOWinsEl.textContent = stats.oWins;
+            statDrawsEl.textContent = stats.draws;
+        }
+
+        function updateMoveHistory() {
+            if (moveHistory.length === 0) {
+                moveHistoryEl.innerHTML = '<div style="opacity:0.5;font-size:0.75rem;">Esperando movimientos...</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < moveHistory.length; i++) {
+                var m = moveHistory[i];
+                var row = Math.floor(m.position / boardSize) + 1;
+                var col = (m.position % boardSize) + 1;
+                html += '<div class="move-entry">' + m.move + '. ' + m.player + ' -> ' + row + '-' + col + '</div>';
+            }
+            moveHistoryEl.innerHTML = html;
+            moveHistoryEl.scrollTop = moveHistoryEl.scrollHeight;
+        }
+
         function updateDisplay() {
             updateCurrentTurn();
             updateScores();
+            updateCellPreviews();
+            updateBoardGlow();
         }
 
-        // Reiniciar juego
         function resetGame() {
-            // Resetear estado
-            board = ['', '', '', '', '', '', '', '', ''];
+            var total = boardSize * boardSize;
+            board = new Array(total).fill('');
             currentPlayer = 'X';
             gameOver = false;
             winner = null;
+            moveNumber = 0;
 
-            // Limpiar celdas
-            cells.forEach(cell => {
-                cell.textContent = '';
+            for (var i = 0; i < cells.length; i++) {
+                var cell = cells[i];
+                cell.innerHTML = '';
                 cell.disabled = false;
-                cell.classList.remove('x', 'o', 'winning');
-            });
+                cell.classList.remove('x-mark', 'o-mark', 'winning');
+            }
 
-            // Ocultar mensajes
             winnerMessageEl.classList.add('hidden');
             drawMessageEl.classList.add('hidden');
             currentTurnEl.classList.remove('hidden');
 
+            moveHistory = [];
+            updateMoveHistory();
             updateDisplay();
+            confettiContainer.innerHTML = '';
         }
 
-        // Iniciar el juego cuando se carga la página
+        function launchConfetti() {
+            var colors = ['#e74c3c', '#3498db', '#f39c12', '#2ecc71', '#9b59b6', '#1abc9c', '#e67e22', '#ff6b6b'];
+            confettiContainer.innerHTML = '';
+            for (var i = 0; i < 60; i++) {
+                var piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                var color = colors[Math.floor(Math.random() * colors.length)];
+                var size = 6 + Math.random() * 8;
+                var left = 20 + Math.random() * 60;
+                var delay = Math.random() * 0.8;
+                var duration = 1 + Math.random() * 0.8;
+                var rotation = Math.random() * 360;
+                piece.style.cssText =
+                    'left:' + left + '%;' +
+                    'top:' + (-10 - Math.random() * 20) + '%;' +
+                    'width:' + size + 'px;height:' + size + 'px;' +
+                    'background:' + color + ';' +
+                    'border-radius:' + (Math.random() > 0.5 ? '50%' : '2px') + ';' +
+                    'animation-delay:' + delay + 's;' +
+                    'animation-duration:' + duration + 's;' +
+                    'transform:rotate(' + rotation + 'deg);';
+                confettiContainer.appendChild(piece);
+            }
+            setTimeout(function() { confettiContainer.innerHTML = ''; }, 2500);
+        }
+
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
