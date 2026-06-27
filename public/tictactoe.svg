@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#ffffff"/>
+  <!-- Grid lines (soft gray) -->
+  <g stroke="#d0d0d0" stroke-width="12" stroke-linecap="round">
+    <line x1="170" y1="100" x2="170" y2="412"/>
+    <line x1="342" y1="100" x2="342" y2="412"/>
+    <line x1="100" y1="170" x2="412" y2="170"/>
+    <line x1="100" y1="342" x2="412" y2="342"/>
+  </g>
+  <!-- X (soft coral) -->
+  <g stroke="#f4877a" stroke-width="28" stroke-linecap="round">
+    <line x1="120" y1="120" x2="220" y2="220"/>
+    <line x1="220" y1="120" x2="120" y2="220"/>
+  </g>
+  <!-- O (pastel blue) -->
+  <circle cx="370" cy="370" r="50" fill="none" stroke="#7ab8e0" stroke-width="28"/>
+</svg>
